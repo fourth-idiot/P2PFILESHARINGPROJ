@@ -20,18 +20,23 @@ public class PeerServer implements Runnable {
             this.executorService = executorService;
         } catch (Exception e) {
             // Error in creating server socket
+            e.printStackTrace();
         }
     }
 
     @Override
     public void run() {
+        System.out.println("Starting peerServer for peer: " + this.id);
         try {
-            while (true) {   
+            while (true) {
                 Socket socket = serverSocket.accept();
+                System.out.println("Peer " + this.id + " received a TCP socket request");
+                System.out.println(this.executorService == null);
                 this.executorService.execute(new EndPoint(this.id, socket));
             }
         } catch (Exception e) {
             // Error in creating server socket
+            e.printStackTrace();
         }
     }
 }

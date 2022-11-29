@@ -31,9 +31,12 @@ public class PeerClient implements Runnable {
                         // Error in connection
                     }
                 }
+                System.out.println("Peer " + this.id + " made connection to Peer " + peerInfo.getId());
+                System.out.println(executorService == null);
                 executorService.execute(new EndPoint(id, peerInfo.getId(), socket));
             } catch (Exception e) {
                 // Error in connection
+                System.out.println(e);
             }
         }
     }
