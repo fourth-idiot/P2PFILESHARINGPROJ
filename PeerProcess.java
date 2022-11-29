@@ -15,6 +15,14 @@ public class PeerProcess {
         peerInfoCfg.parse(lines);
         List<PeerInfo> peersInfo = peerInfoCfg.getPeers();
 
+        // Read Common.cfg
+        List<String> commonConfigLines = readFileObject.read(Constants.COMMON_CONFIG_FILE_NAME);
+        CommonConfig commonConfig = new CommonConfig();
+        commonConfig.parse(commonConfigLines);
+        System.out.println(commonConfig);
+
+
+
         // Make connections
         // Peer X will try to establish connection with all the peers started before it
         // With this logic, peer 1001 will be in listening mode
