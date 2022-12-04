@@ -98,6 +98,8 @@ public class EndPoint implements Runnable {
         // Send bitfield message
         sendBitfield();
 
+        peer1.addPeerSocket(peer2Id, socket);
+
         // Keep listening for other messages
         try {
             while (true) {

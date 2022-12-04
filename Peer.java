@@ -1,10 +1,14 @@
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Peer {
     private final int id;
@@ -12,6 +16,14 @@ public class Peer {
     private final PeerInfoCfg peerInfoCfg;
     private final ExecutorService executorService;
     private final Map<Integer, BitSet> bitfields = new ConcurrentHashMap<>();
+    private final Set<Integer> interestedPeerList = ConcurrentHashMap.newKeySet();
+    private final Set<Integer> unchokedNeighborsList = ConcurrentHashMap.newKeySet();
+    private final Set<Integer> chockedNeighborsList = ConcurrentHashMap.newKeySet();
+    private final AtomicInteger optimisticNeighbor = new AtomicInteger(-1);
+    private final Set<Integer> completedPeersList = new HashSet<>();
+    private final Map<Integer, Integer> downloadRateMap = new ConcurrentHashMap<>();
+    private final Map<Integer, Socket> peerSockets = new ConcurrentHashMap<>();
+
 
     public Peer(int id, CommonCfg commoncfg, PeerInfoCfg peerInfoCfg, ExecutorService executorService) {
         this.id = id;
@@ -35,6 +47,51 @@ public class Peer {
         return this.bitfields;
     }
 
+    public Set<Integer> getUnchokedNeighborsList(){
+        return this.getUnchokedNeighborsList();
+    }
+
+    public void addPeerSocket(int id, Socket socket)
+    {
+        peerSockets.put(id, socket);
+    }
+
+    public Map<Integer, Socket> getPeerSockets()
+    {
+        return peerSockets;
+    }
+
+    public Socket getPeerSocket(int id)
+    {
+        return peerSockets.get(id);
+    }
+
+    public void reselectNeighbours(){
+        List<Integer> peersAccordingToDownloadRate = getPeersSortedByDownLoadRate();
+        unchokedNeighborsList.clear();
+
+        if (!interestedPeerList.isEmpty()){
+
+            int count = 0;
+            int i = 0;
+            while (count < commonCfg.getNumberOfPreferredNeighbors() && i < interestedPeerList.size()){
+                int currentPeer = peersAccordingToDownloadRate.get(i);
+                if (interestedPeerList.contains(currentPeer)){
+                    unchokedNeighborsList.add(currentPeer);
+                    count++;
+                }
+                i++;
+            }
+        }
+
+
+
+    }
+
+    public List<Integer> getPeersSortedByDownLoadRate(){
+        return null;
+    }
+
     public BitSet getBitfield(int peerId) {
         return this.bitfields.get(peerId);
     }
@@ -46,6 +103,7 @@ public class Peer {
                              ", Value = " + entry.getValue());
     }
     
+
 
     // Peer server
     public class PeerServer implements Runnable {

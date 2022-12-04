@@ -1,4 +1,6 @@
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.List;
 
@@ -27,5 +29,9 @@ public class PeerProcess {
         // Create peer instance
         ExecutorService executorService = Executors.newFixedThreadPool(16);
         Peer peer = new Peer(id, commonCfg, peerInfoCfg, executorService);
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
+        scheduler.scheduleAtFixedRate(new PreferredNeighborsSelectorScheduler(id, executorService, peer), 0L, commonCfg.getUnchokingInterval(), TimeUnit.SECONDS);
+        
     }
 }
