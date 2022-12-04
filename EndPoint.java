@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.concurrent.ExecutorService;
 
+// import Constants.MessageType;
 
 public class EndPoint implements Runnable {
     int peer1Id;
@@ -15,8 +16,13 @@ public class EndPoint implements Runnable {
     Socket socket;
     InputStream inputStream;
     OutputStream outputStream;
+    Bitfield bfUtil;
+    ExecutorService executorService;
+    // Peer peer;
     boolean handshakeInitiated = false;
-    
+    BitSet bitfield = null;
+    boolean choke = true;
+
     public EndPoint(int peer1Id, Peer peer1, Socket socket) throws IOException {
         System.out.println("Creating endpoint instance between " + peer1Id + ", " + peer1Id);
         this.peer1Id = peer1Id;
@@ -79,10 +85,46 @@ public class EndPoint implements Runnable {
         this.peer1.addOrUpdateBitfield(this.peer2Id, bitfield);
     }
 
+    private void addInterestedPeer() {
+        peer1.addInterestedPeer(peer2Id);
+    }
+
+    private void removeNotInterestedPeer() {
+        peer1.removeFromInterestedPeer(peer2Id);
+    }
+
+    private void chokeHandler() {
+        choke = true;
+    }
+
+    private void unchokeHandler() {
+        choke = false;
+        requestPiece();
+        // sendPieceRequest();
+    }
+
+    private void requestPiece() {
+        if (choke == false) {
+            int nextPieceIdx = bfUtil.getNextInterestedPieceIndex(bitfield);
+            if (nextPieceIdx != -1) {
+                executorService
+                        .execute(new MessageSender(outputStream,
+                                CommonUtils.getMessage(Constants.MessageType.NOT_INTERESTED, null)));
+            }
+        }
+    }
+
+    private void haveHandler(int payloadLength) throws IOException {
+        int pieceIndex = CommonUtils.byteArrToInt(inputStream.readNBytes(payloadLength));
+        bitfield.set(pieceIndex);
+        // sendIfinterested();
+
+    }
+
     @Override
     public void run() {
         // Initiate handshake only if both the peerIds are known
-        if(this.peer1Id != this.peer2Id) {
+        if (this.peer1Id != this.peer2Id) {
             try {
                 sendHandshake();
                 this.handshakeInitiated = true;
@@ -105,20 +147,25 @@ public class EndPoint implements Runnable {
         try {
             while (true) {
                 byte[] message = inputStream.readNBytes(5);
-                if(message.length > 0) {
+                if (message.length > 0) {
                     int payloadLength = CommonUtils.byteArrToInt(Arrays.copyOfRange(message, 0, 4));
                     Constants.MessageType messageType = Constants.MessageType.getByValue((int) message[4]);
                     if (messageType != null) {
-                        switch(messageType) {
+                        switch (messageType) {
                             case CHOKE:
+                                chokeHandler();
                                 break;
                             case UNCHOKE:
+                                unchokeHandler();
                                 break;
                             case INTERESTED:
+                                addInterestedPeer();
                                 break;
                             case NOT_INTERESTED:
+                                removeNotInterestedPeer();
                                 break;
                             case HAVE:
+                                // haveHandler();
                                 break;
                             case BITFIELD:
                                 System.out.println("Received bitfield message");
@@ -135,6 +182,7 @@ public class EndPoint implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     public void sendMessage(Constants.MessageType messageType, ExecutorService executorService){

@@ -15,6 +15,7 @@ public class Peer {
     private final CommonCfg commonCfg;
     private final PeerInfoCfg peerInfoCfg;
     private final ExecutorService executorService;
+    private final Set<Integer> interestedPeers = ConcurrentHashMap.newKeySet();
     private final Map<Integer, BitSet> bitfields = new ConcurrentHashMap<>();
     private final Set<Integer> interestedPeerList = ConcurrentHashMap.newKeySet();
     private final Set<Integer> unchokedNeighborsList = ConcurrentHashMap.newKeySet();
@@ -24,26 +25,26 @@ public class Peer {
     private final Map<Integer, Integer> downloadRateMap = new ConcurrentHashMap<>();
     private final Map<Integer, EndPoint> peerEndPoints = new ConcurrentHashMap<>();
 
-
     public Peer(int id, CommonCfg commoncfg, PeerInfoCfg peerInfoCfg, ExecutorService executorService) {
         this.id = id;
         this.commonCfg = commoncfg;
         this.peerInfoCfg = peerInfoCfg;
         this.executorService = executorService;
 
-        // If the peer has file, set all bytes in the bitfield (of size equal to the number of pieces) to True.
+        // If the peer has file, set all bytes in the bitfield (of size equal to the
+        // number of pieces) to True.
         BitSet bitfield = new BitSet(this.commonCfg.getNumberOfPieces());
-        if(this.peerInfoCfg.getPeer(this.id).getHasFile()) {
+        if (this.peerInfoCfg.getPeer(this.id).getHasFile()) {
             bitfield.set(0, commoncfg.getNumberOfPieces());
         }
         this.bitfields.put(id, bitfield);
-        
+
         // Start peer server and client
         this.executorService.execute(new PeerServer());
         this.executorService.execute(new PeerClient());
     }
 
-    public PeerInfoCfg getPeerInfoCfg(){
+    public PeerInfoCfg getPeerInfoCfg() {
         return peerInfoCfg;
     }
 
@@ -51,41 +52,37 @@ public class Peer {
         return this.bitfields;
     }
 
-    public Set<Integer> getUnchokedNeighborsList(){
+    public Set<Integer> getUnchokedNeighborsList() {
         return this.getUnchokedNeighborsList();
     }
 
-    public void addPeerEndPoint(int id, EndPoint endPoint)
-    {
+    public void addPeerEndPoint(int id, EndPoint endPoint) {
         peerEndPoints.put(id, endPoint);
     }
 
-    public Map<Integer, EndPoint> getPeerEndPoints()
-    {
+    public Map<Integer, EndPoint> getPeerEndPoints() {
         return peerEndPoints;
     }
 
-    public EndPoint getPeerEndPoint(int id)
-    {
+    public EndPoint getPeerEndPoint(int id) {
         return peerEndPoints.get(id);
     }
 
-    public void setOptimisticNeighbor(int optimisticNeighbor)
-    {
+    public void setOptimisticNeighbor(int optimisticNeighbor) {
         this.optimisticNeighbor.set(optimisticNeighbor);
     }
 
-    public void reselectNeighbours(){
+    public void reselectNeighbours() {
         List<Integer> peersAccordingToDownloadRate = getPeersSortedByDownLoadRate();
         unchokedNeighborsList.clear();
 
-        if (!interestedPeerList.isEmpty()){
+        if (!interestedPeerList.isEmpty()) {
 
             int count = 0;
             int i = 0;
-            while (count < commonCfg.getNumberOfPreferredNeighbors() && i < interestedPeerList.size()){
+            while (count < commonCfg.getNumberOfPreferredNeighbors() && i < interestedPeerList.size()) {
                 int currentPeer = peersAccordingToDownloadRate.get(i);
-                if (interestedPeerList.contains(currentPeer)){
+                if (interestedPeerList.contains(currentPeer)) {
                     unchokedNeighborsList.add(currentPeer);
                     count++;
                 }
@@ -93,11 +90,9 @@ public class Peer {
             }
         }
 
-
-
     }
 
-    public List<Integer> getPeersSortedByDownLoadRate(){
+    public List<Integer> getPeersSortedByDownLoadRate() {
         return null;
     }
 
@@ -107,17 +102,24 @@ public class Peer {
 
     public void addOrUpdateBitfield(int peerId, BitSet bitfield) {
         this.bitfields.put(peerId, bitfield);
-        for (Map.Entry<Integer, BitSet> entry : this.bitfields.entrySet()) 
+        for (Map.Entry<Integer, BitSet> entry : this.bitfields.entrySet())
             System.out.println("Key = " + entry.getKey() +
-                             ", Value = " + entry.getValue());
+                    ", Value = " + entry.getValue());
     }
-    
 
+    // Interested Peer
+    public void addInterestedPeer(int peerId) {
+        interestedPeers.add(peerId);
+    }
+
+    public void removeFromInterestedPeer(int peerId) {
+        interestedPeers.remove(peerId);
+    }
 
     // Peer server
     public class PeerServer implements Runnable {
         ServerSocket serverSocket;
-    
+
         public PeerServer() {
             System.out.println("Creating peer server");
             try {
@@ -130,7 +132,7 @@ public class Peer {
                 e.printStackTrace();
             }
         }
-    
+
         @Override
         public void run() {
             try {
@@ -145,16 +147,15 @@ public class Peer {
         }
     }
 
-
     // Peer client
     public class PeerClient implements Runnable {
         public PeerClient() {
             System.out.println("Creating peer client");
         }
-    
+
         @Override
         public void run() {
-            for(PeerInfoCfg.PeerInfo peerInfo : Peer.this.peerInfoCfg.getPeers().values()) {
+            for (PeerInfoCfg.PeerInfo peerInfo : Peer.this.peerInfoCfg.getPeers().values()) {
                 if (peerInfo.getId() == id) {
                     break;
                 }
@@ -166,9 +167,10 @@ public class Peer {
                     System.out.println("Peer " + Peer.this.id + " made a connection request to " + peerInfo.getId());
                     Peer.this.executorService.execute(new EndPoint(id, Peer.this, peerInfo.getId(), socket));
                 } catch (Exception e) {
-                    e.printStackTrace();;
+                    e.printStackTrace();
+                    ;
                 }
             }
         }
-    }    
+    }
 }

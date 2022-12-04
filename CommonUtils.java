@@ -1,6 +1,5 @@
 import java.nio.ByteBuffer;
 
-
 public class CommonUtils {
     public static byte[] getMessage(Constants.MessageType messageType, byte[] messagePayload) {
         int payloadLength = messagePayload != null ? messagePayload.length : 0;
@@ -22,12 +21,12 @@ public class CommonUtils {
     public static byte[] getHandshakeMessage(int id) {
         String header = Constants.HANDSHAKE_HEADER;
         byte[] headerBytes = header.getBytes();
-        
+
         String zeroes = Constants.ZERO_BITS_HANDSHAKE;
         byte[] zeroBytes = zeroes.getBytes();
-        
+
         byte[] idBytes = intToByteArr(id);
-        
+
         int messageLength = headerBytes.length + zeroBytes.length + idBytes.length;
         byte[] message = new byte[messageLength];
         for (int i = 0; i < message.length; i++) {
