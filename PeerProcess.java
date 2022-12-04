@@ -3,11 +3,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.List;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class PeerProcess {
+    private static final Logger LOGGER = LogManager.getLogger(PeerProcess.class);
 
     public static void main(String[] args) {
+        
+        LOGGER.info("Inside main method");
+        // System.setProperty("logFilePath", "path to the log folder");
+        String myString = System.getProperty("logFilePath");
+        System.out.println(myString);
+
         // Read the current peer id
         int id = Integer.parseInt(args[0]);
 
