@@ -40,6 +40,7 @@ public class PeerProcess {
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
         scheduler.scheduleAtFixedRate(new PreferredNeighborsSelectorScheduler(id, executorService, peer), 0L, commonCfg.getUnchokingInterval(), TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(new OptimisticNeighborSelectorScheduler(id, executorService, peer), 0L, commonCfg.getOptimisticUnchokingInterval(), TimeUnit.SECONDS);
         
     }
 }

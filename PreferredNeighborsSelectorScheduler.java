@@ -24,31 +24,17 @@ public class PreferredNeighborsSelectorScheduler implements Runnable {
         peer.reselectNeighbours();
 
         if (!peer.getUnchokedNeighborsList().isEmpty()){
-            sendMessage(peer.getUnchokedNeighborsList(), Constants.MessageType.UNCHOKE);
+
+           // sendMessage(peer.getUnchokedNeighborsList(), Constants.MessageType.UNCHOKE);
+           for (int id : peer.getUnchokedNeighborsList()){
+            EndPoint ep = peer.getPeerEndPoint(id);
+            ep.sendMessage(Constants.MessageType.UNCHOKE, executorService);
+           }
+
         }
 
         
     }
-
-    private void sendMessage(Set<Integer> recipientPeers, Constants.MessageType messageType){
-        for (int id : recipientPeers){
-            Optional.ofNullable(peer.getPeerSocket(id)).ifPresent(
-                socket -> {
-                    try {
-                        executorService.execute(new MessageSender(socket.getOutputStream(), CommonUtils.getMessage(messageType, new byte[0])));
-                    } catch (Exception e){
-                        e.printStackTrace();
-                    }
-                }
-            );
-        }
-
-        
-    }
-
-
-
-
 
 
     

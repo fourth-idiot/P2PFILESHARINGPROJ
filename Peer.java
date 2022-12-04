@@ -22,7 +22,7 @@ public class Peer {
     private final AtomicInteger optimisticNeighbor = new AtomicInteger(-1);
     private final Set<Integer> completedPeersList = new HashSet<>();
     private final Map<Integer, Integer> downloadRateMap = new ConcurrentHashMap<>();
-    private final Map<Integer, Socket> peerSockets = new ConcurrentHashMap<>();
+    private final Map<Integer, EndPoint> peerEndPoints = new ConcurrentHashMap<>();
 
 
     public Peer(int id, CommonCfg commoncfg, PeerInfoCfg peerInfoCfg, ExecutorService executorService) {
@@ -43,6 +43,10 @@ public class Peer {
         this.executorService.execute(new PeerClient());
     }
 
+    public PeerInfoCfg getPeerInfoCfg(){
+        return peerInfoCfg;
+    }
+
     public Map<Integer, BitSet> getBitfields() {
         return this.bitfields;
     }
@@ -51,19 +55,24 @@ public class Peer {
         return this.getUnchokedNeighborsList();
     }
 
-    public void addPeerSocket(int id, Socket socket)
+    public void addPeerEndPoint(int id, EndPoint endPoint)
     {
-        peerSockets.put(id, socket);
+        peerEndPoints.put(id, endPoint);
     }
 
-    public Map<Integer, Socket> getPeerSockets()
+    public Map<Integer, EndPoint> getPeerEndPoints()
     {
-        return peerSockets;
+        return peerEndPoints;
     }
 
-    public Socket getPeerSocket(int id)
+    public EndPoint getPeerEndPoint(int id)
     {
-        return peerSockets.get(id);
+        return peerEndPoints.get(id);
+    }
+
+    public void setOptimisticNeighbor(int optimisticNeighbor)
+    {
+        this.optimisticNeighbor.set(optimisticNeighbor);
     }
 
     public void reselectNeighbours(){

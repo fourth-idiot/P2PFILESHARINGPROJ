@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.concurrent.ExecutorService;
 
 
 public class EndPoint implements Runnable {
@@ -98,7 +99,7 @@ public class EndPoint implements Runnable {
         // Send bitfield message
         sendBitfield();
 
-        peer1.addPeerSocket(peer2Id, socket);
+        peer1.addPeerEndPoint(peer2Id, this);
 
         // Keep listening for other messages
         try {
@@ -132,6 +133,15 @@ public class EndPoint implements Runnable {
                 }
             }
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendMessage(Constants.MessageType messageType, ExecutorService executorService){
+        try {
+            executorService.execute(new MessageSender(socket.getOutputStream(), CommonUtils.getMessage(messageType, new byte[0])));
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
