@@ -65,4 +65,14 @@ public class Bitfield {
     public void readLock() {
         readLock.lock();
     }
+
+    public DelayQueue<PieceIndex> getDelayQueue()
+    {
+        return delayQueue;
+    }
+
+    public void removeTimedOutPieceIndex(int pieceIndex)
+    {
+        requestedPieces.remove(pieceIndex);
+    }
 }

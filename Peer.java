@@ -17,6 +17,7 @@ public class Peer {
     private final ExecutorService executorService;
     private final Set<Integer> interestedPeers = ConcurrentHashMap.newKeySet();
     private final Map<Integer, BitSet> bitfields = new ConcurrentHashMap<>();
+    private final Map<Integer, Bitfield> bitfieldMap = new ConcurrentHashMap<>();
     private final Set<Integer> interestedPeerList = ConcurrentHashMap.newKeySet();
     private final Set<Integer> unchokedNeighborsList = ConcurrentHashMap.newKeySet();
     private final Set<Integer> chockedNeighborsList = ConcurrentHashMap.newKeySet();
@@ -50,6 +51,10 @@ public class Peer {
 
     public Map<Integer, BitSet> getBitfields() {
         return this.bitfields;
+    }
+
+    public Map<Integer, Bitfield> getBitfieldMap() {
+        return this.bitfieldMap;
     }
 
     public Set<Integer> getUnchokedNeighborsList() {
@@ -98,6 +103,10 @@ public class Peer {
 
     public BitSet getBitfield(int peerId) {
         return this.bitfields.get(peerId);
+    }
+
+    public Bitfield getBitfieldNew(int peerId) {
+        return this.bitfieldMap.get(peerId);
     }
 
     public void addOrUpdateBitfield(int peerId, BitSet bitfield) {

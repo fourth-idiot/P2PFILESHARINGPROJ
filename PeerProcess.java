@@ -3,6 +3,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.nio.file.Paths;
+import java.sql.Time;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,6 +58,7 @@ public class PeerProcess {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
         scheduler.scheduleAtFixedRate(new PreferredNeighborsSelectorScheduler(id, executorService, peer), 0L, commonCfg.getUnchokingInterval(), TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(new OptimisticNeighborSelectorScheduler(id, executorService, peer), 0L, commonCfg.getOptimisticUnchokingInterval(), TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(new RequestedPiecesScheduler(id, executorService, peer), 0L, 35, TimeUnit.SECONDS);
         
     }
 }
