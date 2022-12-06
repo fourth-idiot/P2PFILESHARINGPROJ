@@ -48,4 +48,12 @@ public class CommonUtils {
     public static int byteArrToInt(byte[] byteArr) {
         return ByteBuffer.wrap(byteArr).getInt();
     }
+
+    public static int mergeByteArr(byte[] arr1, byte[] arr2, int start) {
+        for (byte val : arr2) {
+            arr1[start++] = val;
+
+        }
+        return start;
+    }
 }

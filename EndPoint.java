@@ -1,11 +1,14 @@
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.management.MemoryType;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.concurrent.ExecutorService;
+
+// import Constants.MessageType;
 
 // import Constants.MessageType;
 
@@ -18,6 +21,7 @@ public class EndPoint implements Runnable {
     OutputStream outputStream;
     Bitfield bfUtil;
     ExecutorService executorService;
+    FilePieces filePiece;
     // Peer peer;
     boolean handshakeInitiated = false;
     BitSet bitfield = null;
@@ -101,6 +105,7 @@ public class EndPoint implements Runnable {
         choke = false;
         requestPiece();
         // sendPieceRequest();
+        requestPiece();
     }
 
     private void requestPiece() {
@@ -109,16 +114,78 @@ public class EndPoint implements Runnable {
             if (nextPieceIdx != -1) {
                 executorService
                         .execute(new MessageSender(outputStream,
-                                CommonUtils.getMessage(Constants.MessageType.NOT_INTERESTED, null)));
+                                CommonUtils.getMessage(Constants.MessageType.REQUEST,
+                                        CommonUtils.intToByteArr(nextPieceIdx))));
+            } else {
+                sendIfNotInterested();
             }
         }
+    }
+
+    private void sendIfNotInterested() {
+        executorService.execute(new MessageSender(outputStream,
+                CommonUtils.getMessage(Constants.MessageType.NOT_INTERESTED, null)));
     }
 
     private void haveHandler(int payloadLength) throws IOException {
         int pieceIndex = CommonUtils.byteArrToInt(inputStream.readNBytes(payloadLength));
         bitfield.set(pieceIndex);
-        // sendIfinterested();
+        sendIfInterested();
 
+    }
+
+    private void sendIfInterested() {
+        if (bfUtil.isInterested(bitfield)) {
+            executorService.execute(
+                    new MessageSender(outputStream, CommonUtils.getMessage(Constants.MessageType.INTERESTED, null)));
+        }
+    }
+
+    private void pieceRequestHandler(int msglen) throws IOException {
+        int pieceIndex = CommonUtils.byteArrToInt(inputStream.readNBytes(msglen));
+        if (peer1.isUnchoked(peer2Id)) {
+            byte[] pieceContent = filePiece.getFilePiece(pieceIndex);
+            byte[] pieceResponse = new byte[4 + pieceContent.length];
+
+            int counter = CommonUtils.mergeByteArr(pieceResponse, CommonUtils.intToByteArr(pieceIndex), 0);
+            CommonUtils.mergeByteArr(pieceResponse, pieceContent, counter);
+            executorService.execute(new MessageSender(outputStream,
+                    CommonUtils.getMessage(Constants.MessageType.PIECE, pieceResponse)));
+        }
+    }
+
+    private void pieceResponseHandler(int msglen) throws IOException {
+        int pieceIndex = CommonUtils.byteArrToInt(inputStream.readNBytes(4));
+        byte[] pieceContent = inputStream.readNBytes(msglen - 4);
+
+        filePiece.savePiece(pieceIndex, pieceContent);
+        bfUtil.removeReceivedPieceIndex(pieceIndex);
+        haveBroadcast(pieceIndex);
+        // logger
+        if (bfUtil.allPiecesReceived()) {
+            filePiece.joinAndSavePieces();
+            // logger
+            sendIfNotInterested();
+            broadcastDone();
+
+        } else {
+            requestPiece();
+        }
+    }
+
+    private void haveBroadcast(int pieceIndex) throws IOException {
+        for (Socket s : peer1.getPeerSockets().values()) {
+            executorService.execute(new MessageSender(s.getOutputStream(),
+                    CommonUtils.getMessage(Constants.MessageType.HAVE, CommonUtils.intToByteArr(pieceIndex))));
+        }
+    }
+
+    private void broadcastDone() throws IOException {
+        for (Socket s : peer1.getPeerSockets().values()) {
+            executorService.execute(new MessageSender(
+                    s.getOutputStream(), null));
+            // need for done Message CommonUtil.getMessage(0, MessageType.DONE, null)
+        }
     }
 
     @Override
@@ -165,15 +232,17 @@ public class EndPoint implements Runnable {
                                 removeNotInterestedPeer();
                                 break;
                             case HAVE:
-                                // haveHandler();
+                                haveHandler(message.length);
                                 break;
                             case BITFIELD:
                                 System.out.println("Received bitfield message");
                                 bitfieldHandler(payloadLength);
                                 break;
                             case REQUEST:
+                                pieceRequestHandler(message.length);
                                 break;
                             case PIECE:
+                                pieceResponseHandler(message.length);
                                 break;
                         }
                     }
@@ -185,9 +254,10 @@ public class EndPoint implements Runnable {
 
     }
 
-    public void sendMessage(Constants.MessageType messageType, ExecutorService executorService){
+    public void sendMessage(Constants.MessageType messageType, ExecutorService executorService) {
         try {
-            executorService.execute(new MessageSender(socket.getOutputStream(), CommonUtils.getMessage(messageType, new byte[0])));
+            executorService.execute(
+                    new MessageSender(socket.getOutputStream(), CommonUtils.getMessage(messageType, new byte[0])));
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

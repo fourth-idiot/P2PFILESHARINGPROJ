@@ -24,6 +24,7 @@ public class Peer {
     private final AtomicInteger optimisticNeighbor = new AtomicInteger(-1);
     private final Set<Integer> completedPeersList = new HashSet<>();
     private final Map<Integer, Integer> downloadRateMap = new ConcurrentHashMap<>();
+    private final Map<Integer, Socket> peerSockets = new ConcurrentHashMap<>();
     private final Map<Integer, EndPoint> peerEndPoints = new ConcurrentHashMap<>();
 
     public Peer(int id, CommonCfg commoncfg, PeerInfoCfg peerInfoCfg, ExecutorService executorService) {
@@ -77,6 +78,10 @@ public class Peer {
         this.optimisticNeighbor.set(optimisticNeighbor);
     }
 
+    public boolean isUnchoked(int id) {
+        return unchokedNeighborsList.contains(id) || optimisticNeighbor.get() == id;
+    }
+
     public void reselectNeighbours() {
         List<Integer> peersAccordingToDownloadRate = getPeersSortedByDownLoadRate();
         unchokedNeighborsList.clear();
@@ -123,6 +128,10 @@ public class Peer {
 
     public void removeFromInterestedPeer(int peerId) {
         interestedPeers.remove(peerId);
+    }
+
+    public Map<Integer, Socket> getPeerSockets() {
+        return peerSockets;
     }
 
     // Peer server

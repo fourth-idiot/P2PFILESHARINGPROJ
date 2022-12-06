@@ -8,17 +8,29 @@ import java.util.BitSet;
 
 public class Bitfield {
     private final BitSet bitfield;
+    private final int numberOfPieces;
     private final Set<Integer> requestedPieces = ConcurrentHashMap.newKeySet();
     private final DelayQueue<PieceIndex> delayQueue = new DelayQueue<>();
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock readLock = readWriteLock.readLock();
+    private final Lock writeLock = readWriteLock.writeLock();
 
-    public Bitfield(BitSet bitfield) {
+    public Bitfield(BitSet bitfield, CommonCfg commonCfg) {
         this.bitfield = bitfield;
+        this.numberOfPieces = commonCfg.getNumberOfPieces();
     }
 
     public BitSet getBitfield() {
         return bitfield;
+    }
+
+    public boolean isInterested(BitSet peerBitField) {
+        try {
+            readLock();
+            return getNextClearIndex(peerBitField) != -1;
+        } finally {
+            readUnlock();
+        }
     }
 
     public int getFirstClearIndexFromBitfields(BitSet bf1, BitSet bf2, int fromIdx) {
@@ -58,6 +70,21 @@ public class Bitfield {
         }
     }
 
+    public void removeReceivedPieceIndex(int pieceIndex) {
+        try {
+            writeLock();
+            bitfield.set(pieceIndex);
+            requestedPieces.remove(pieceIndex);
+        } finally {
+            writeUnlock();
+        }
+    }
+
+    public boolean allPiecesReceived() {
+        int nextClearIndex = bitfield.nextClearBit(0);
+        return nextClearIndex == -1 || nextClearIndex >= numberOfPieces;
+    }
+
     private void readUnlock() {
         readLock.unlock();
     }
@@ -66,13 +93,19 @@ public class Bitfield {
         readLock.lock();
     }
 
-    public DelayQueue<PieceIndex> getDelayQueue()
-    {
+    public void writeLock() {
+        writeLock.lock();
+    }
+
+    public void writeUnlock() {
+        writeLock.unlock();
+    }
+
+    public DelayQueue<PieceIndex> getDelayQueue() {
         return delayQueue;
     }
 
-    public void removeTimedOutPieceIndex(int pieceIndex)
-    {
+    public void removeTimedOutPieceIndex(int pieceIndex) {
         requestedPieces.remove(pieceIndex);
     }
 }
