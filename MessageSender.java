@@ -1,14 +1,13 @@
 import java.io.OutputStream;
-import java.net.SocketException;
+
 
 public class MessageSender implements Runnable {
-
     private final OutputStream outputStream;
-    private final byte[] msg;
+    private final byte[] message;
 
-    public MessageSender(OutputStream outputStream, byte[] msg) {
+    public MessageSender(OutputStream outputStream, byte[] message) {
         this.outputStream = outputStream;
-        this.msg = msg;
+        this.message = message;
     }
 
     @Override
@@ -17,8 +16,7 @@ public class MessageSender implements Runnable {
             if (Thread.currentThread().isInterrupted())
                 return;
             synchronized(outputStream) {
-                Thread.sleep(15);
-                outputStream.write(msg);
+                outputStream.write(this.message);
             }
         } catch (Exception e){
             e.printStackTrace();

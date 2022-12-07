@@ -43,14 +43,12 @@ public class StartRemotePeers {
         // Give executable permissions
         String[] giveExecPermissionsCommand = new String[] {"sh", "-c", String.format("ssh %s@%s chmod 777 %s", username, peerInfo.getHostName(), Paths.get(workingDir, "run.sh").toString())};
         Process giveExecPermissionsProcess = Runtime.getRuntime().exec(giveExecPermissionsCommand);
-        int status1 = giveExecPermissionsProcess.waitFor();
-        System.out.println(status1);
+        giveExecPermissionsProcess.waitFor();
 
         // Run peer process
         String[] startPeerProcessCommand = new String[] {"sh", "-c", String.format("ssh %s@%s %s %s %d", username, peerInfo.getHostName(), Paths.get(workingDir, "run.sh").toString(), workingDir, peerInfo.getId())};
         Process startPeerProcessProcess = Runtime.getRuntime().exec(startPeerProcessCommand);
-        int status2 = startPeerProcessProcess.waitFor();
-        System.out.println(status2);
+        startPeerProcessProcess.waitFor();
     }
 
 	public static void main(String[] args) {
@@ -71,7 +69,6 @@ public class StartRemotePeers {
         // Loop over peerInfo to start peer process
         try {
             for (PeerInfoCfg.PeerInfo peerInfo : peersInfo.values()) {
-                System.out.println(peerInfo);
                 copyFiles(username, peerInfo, workingDir, inputFileName);
                 startPeerProcess(username, peerInfo, workingDir);
             }

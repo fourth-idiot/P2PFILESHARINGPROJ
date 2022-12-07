@@ -3,7 +3,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 
@@ -35,11 +34,9 @@ public class FilePieces {
     }
 
     public void splitFileintoPieces() {
-        System.out.println("Splitting file...");
 		try {
             FileInputStream fileInputStream = new FileInputStream(this.filePath);
             int pieceStart = 0;
-            System.out.println(this.pieceSize);
             for (int pieceIndex = 0; pieceIndex < this.numberOfPieces; pieceIndex++) {
                 int newPieceStart = pieceStart + this.pieceSize;
                 int pieceLength = this.pieceSize;
@@ -48,7 +45,6 @@ public class FilePieces {
                     newPieceStart = this.fileSize;
                     pieceLength = this.fileSize - pieceStart;
                 }
-                System.out.println(pieceLength);
                 byte[] pieceByteArray = new byte[pieceLength];
                 fileInputStream.read(pieceByteArray);
                 String piecePath = Paths.get(this.piecesDirPath, String.format("%s_%d", this.fileName, pieceIndex)).toString();
@@ -98,10 +94,14 @@ public class FilePieces {
 		fileOutputStream.close();
 	}
 
-    public synchronized void deletePiecesDir() throws IOException {
-        if (Files.exists(Paths.get(piecesDirPath))) {
-            Helper.deleteDirectory(piecesDirPath);
-            Files.delete(Paths.get(piecesDirPath));
+    public void deletePiecesDir() throws IOException {
+        try {
+            if (Files.exists(Paths.get(piecesDirPath))) {
+                Helper.deleteDirectory(piecesDirPath);
+                Files.delete(Paths.get(piecesDirPath));
+            }
+        } catch (Exception e) {
+            // 
         }
     }
 }

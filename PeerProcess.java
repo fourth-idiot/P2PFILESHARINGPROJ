@@ -2,25 +2,31 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 public class PeerProcess {
-    private static final Logger LOGGER = LogManager.getLogger(PeerProcess.class);
-
     private static void createRequiredDirStructure(PeerInfoCfg.PeerInfo peerInfo, String workingDir, String inputFileName) throws Exception {
-        String[] createDirectoryStructureCommand = new String[] {"sh", "-c", String.format("mkdir -p %s", Paths.get(workingDir, String.format("peer_%d", peerInfo.getId())).toString())};
-        Process createDirectoryStructureProcess = Runtime.getRuntime().exec(createDirectoryStructureCommand);
-        createDirectoryStructureProcess.waitFor();
-        
+        // Create peer directory, if not present
+        try {
+            String peerDirPath = Paths.get(Constants.WORKING_DIR, String.format("peer_%d", peerInfo.getId())).toString();
+            Files.createDirectories(Paths.get(peerDirPath));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // Copy input file to the peer directory, if the peer has file
         if(peerInfo.getHasFile()) {
-            String[] copyInputFileCommand = new String[] {"sh", "-c", String.format("cp %s %s", Paths.get(workingDir, inputFileName).toString(), Paths.get(workingDir, String.format("peer_%d", peerInfo.getId())).toString())};
-            Process copyInputFileProcess = Runtime.getRuntime().exec(copyInputFileCommand);
-            copyInputFileProcess.waitFor();
-        }   
+            try {
+                Path source = Paths.get(Constants.WORKING_DIR, inputFileName);
+                Path target = Paths.get(Constants.WORKING_DIR, String.format("peer_%d", peerInfo.getId()), inputFileName);
+                Files.copy(source, target);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -34,13 +40,11 @@ public class PeerProcess {
         List<String> commonCfgLines = readFileObject.read(Constants.COMMON_CONFIG_FILE_NAME);
         CommonCfg commonCfg = new CommonCfg();
         commonCfg.parse(commonCfgLines);
-        System.out.println(commonCfg);
 
         // Read PeerInfo.cfg
         List<String> peerInfoLines = readFileObject.read(Constants.PEER_INFO_CONFIG_FILE_NAME);
         PeerInfoCfg peerInfoCfg = new PeerInfoCfg();
         peerInfoCfg.parse(peerInfoLines);
-        System.out.println(peerInfoCfg);
 
         // Create folder structure
         try {
@@ -49,16 +53,12 @@ public class PeerProcess {
             e.printStackTrace();
         }
         
-        // Create peer instance
-        ExecutorService executorService = Executors.newFixedThreadPool(16);
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+        ExecutorService executorService = Executors.newFixedThreadPool(8);
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
 
         Peer peer = new Peer(id, commonCfg, peerInfoCfg, executorService, scheduler);
-
-        System.out.println("Optimistic unchoke interval " + commonCfg.getOptimisticUnchokingInterval());
-        scheduler.scheduleAtFixedRate(new PreferredNeighborsSelectorScheduler(executorService, peer), 0L, commonCfg.getUnchokingInterval(), TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(new OptimisticNeighborSelectorScheduler(peer), 0L, commonCfg.getOptimisticUnchokingInterval(), TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(new RequestedPiecesScheduler(id, executorService, peer), 0L, 35, TimeUnit.SECONDS);
-        
+        scheduler.scheduleAtFixedRate(new PreferredNeighborsSelectorScheduler(id, peer), 0L, commonCfg.getUnchokingInterval(), TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(new OptimisticallyUnchokedNeighborSelectorScheduler(id, peer, peerInfoCfg), 0L, commonCfg.getOptimisticUnchokingInterval(), TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(new RequestedPiecesScheduler(peer), 0L, 30, TimeUnit.SECONDS);
     }
 }

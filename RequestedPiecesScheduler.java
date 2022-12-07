@@ -6,22 +6,16 @@ import java.util.BitSet;
 import java.util.Map;;
 
 public class RequestedPiecesScheduler implements Runnable{
-
-    private final int id;
-    private final ExecutorService executorService;
     private Peer peer;
     private final Bitfield bitfield;
 
-    public RequestedPiecesScheduler(int id, ExecutorService executorService, Peer peer) {
-        this.id = id;
-        this.executorService = executorService;
+    public RequestedPiecesScheduler(Peer peer) {
         this.peer = peer;
         this.bitfield = peer.getBitfield();
     }
 
     @Override
     public void run() {
-        System.out.println("Inside this..................");
         try{
             if (Thread.currentThread().isInterrupted())
                 return;
@@ -30,7 +24,6 @@ public class RequestedPiecesScheduler implements Runnable{
             PieceIndex expiredPieceIndex = piecesRequested.poll();
             while(Objects.nonNull(expiredPieceIndex)){
                 bitfield.removeTimedOutPieceIndex(expiredPieceIndex.getIndex());
-                System.out.println(expiredPieceIndex.getIndex());
                 for (Map.Entry<Integer, BitSet> entry : peer.getPeerBitfields().entrySet()){
                     BitSet bitset = entry.getValue();
                     if (bitset.get(expiredPieceIndex.getIndex())){

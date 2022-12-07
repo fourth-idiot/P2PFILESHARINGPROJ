@@ -10,44 +10,38 @@ import java.time.LocalDateTime;
 
 
 public class Helper {
+    public static byte[] getHandshakeMessage(int id) {
+        byte[] message = new byte[Constants.HM_HEADER_FIELD + Constants.HM_ZERO_BITS_FIELD + Constants.HM_PEER_ID_FIELD];
+        int counter = mergeArr2WithArr1(message, Constants.HM_HEADER.getBytes(), 0);
+        for (int i=0; i<10; i++) {
+            message[counter++] = 0;
+        }
+        counter = mergeArr2WithArr1(message, intToByteArr(id), counter);
+        return message;
+    }
+
     public static byte[] getMessage(Constants.MessageType messageType, byte[] messagePayload) {
-        int payloadLength = messagePayload != null ? messagePayload.length : 0;
-        byte[] messageLength = intToByteArr(payloadLength);
-        byte[] message = new byte[5 + payloadLength];
-        for (int i = 0; i < message.length; i++) {
-            if (i < messageLength.length) {
-                message[i] = messageLength[i];
-                continue;
-            } else if (i == messageLength.length) {
-                message[i] = (byte) messageType.getValue();
-            } else {
-                message[i] = messagePayload[i - 5];
-            }
+        int messageLength = messagePayload != null ? messagePayload.length : 0;
+        byte[] message = new byte[Constants.AM_MESSAGE_LENGTH_FIELD + Constants.AM_MESSAGE_TYPE_FIELD + messageLength];
+        int counter = mergeArr2WithArr1(message, intToByteArr(messageLength), 0);
+        message[counter++] = (byte) messageType.getValue();
+        if (messageLength > 0) {
+            mergeArr2WithArr1(message, messagePayload, counter);
         }
         return message;
     }
 
-    public static byte[] getHandshakeMessage(int id) {
-        String header = Constants.HANDSHAKE_HEADER;
-        byte[] headerBytes = header.getBytes();
+    private static byte[] getPieceMessagePayload(int pieceIndex, byte[] pieceByteDataArr) {
+        byte[] pieceMessagePayload = new byte[Constants.PM_PIECE_INDEX_FIELD + pieceByteDataArr.length];
+        int counter = mergeArr2WithArr1(pieceMessagePayload, intToByteArr(pieceIndex), 0);
+        mergeArr2WithArr1(pieceMessagePayload, pieceByteDataArr, counter);
+        return pieceMessagePayload;
+    }
 
-        String zeroes = Constants.ZERO_BITS_HANDSHAKE;
-        byte[] zeroBytes = zeroes.getBytes();
-
-        byte[] idBytes = intToByteArr(id);
-
-        int messageLength = headerBytes.length + zeroBytes.length + idBytes.length;
-        byte[] message = new byte[messageLength];
-        for (int i = 0; i < message.length; i++) {
-            if (i < headerBytes.length) {
-                message[i] = headerBytes[i];
-            } else if (i < headerBytes.length + zeroBytes.length) {
-                message[i] = zeroBytes[i - headerBytes.length];
-            } else {
-                message[i] = idBytes[i - headerBytes.length - zeroBytes.length];
-            }
-        }
-        return message;
+    public static byte[] getPieceMessage(int pieceIndex, byte[] pieceByteDataArr) {
+        byte[] pieceMessagePayload = getPieceMessagePayload(pieceIndex, pieceByteDataArr);
+        byte[] pieceMessage = getMessage(Constants.MessageType.PIECE, pieceMessagePayload);
+        return pieceMessage;
     }
 
     public static byte[] intToByteArr(int num) {
@@ -58,26 +52,15 @@ public class Helper {
         return ByteBuffer.wrap(byteArr).getInt();
     }
 
-    public static int mergeByteArr(byte[] arr1, byte[] arr2, int start) {
-        for (byte val : arr2) {
-            arr1[start++] = val;
-
-        }
-        return start;
-    }
-
     public static String getCurrentTime() {
         return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").format(LocalDateTime.now());
     }
 
-    public static int mergeByteArrays(byte[] arr1, byte[] arr2, int start)
-    {
-        for (byte byteData : arr2)
-        {
-            arr1[start++] = byteData;
+    public static int mergeArr2WithArr1(byte[] arr1, byte[] arr2, int startIndex) {
+        for (byte byteData : arr2) {
+            arr1[startIndex++] = byteData;
         }
-
-        return start;
+        return startIndex;
     }
 
     public static void deleteDirectory(String path) throws IOException

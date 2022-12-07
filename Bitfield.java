@@ -36,7 +36,6 @@ public class Bitfield {
     }
 
     public int getNextInterestedPieceIndex(BitSet peerBitField) {
-        // System.out.println(requestedPieces);
         for (int i = peerBitField.nextSetBit(0); i != -1; i = peerBitField.nextSetBit(i + 1)) {
             // If the piece is present / already requested
             if (requestedPieces.contains(i)) {
@@ -50,39 +49,10 @@ public class Bitfield {
         return -1;
     }
 
-    // public int getFirstClearIndexFromBitfields(BitSet bf1, BitSet bf2, int
-    // fromIdx) {
-    // int index = fromIdx;
-    // while ((index = bf1.nextClearBit(index)) != -1) {
-    // if (bf2.get(index)) {
-    // break;
-    // } else if (index >= bf1.length()) {
-    // index = -1;
-    // break;
-    // }
-    // index++;
-    // }
-    // return index;
-    // }
-
     public void addToRequestedPieces(int pieceIndex) {
         this.requestedPieces.add(pieceIndex);
         this.requestedPiecesQueue.add(new PieceIndex(pieceIndex));
     }
-
-    // public int getNextInterestedPieceIndex(BitSet peerBitField) {
-    // try {
-    // this.readLock.lock();
-    // int nextPieceIdx = getNextClearIndex(peerBitField);
-    // if (nextPieceIdx != -1) {
-    // requestedPieces.add(nextPieceIdx);
-    // this.requestedPiecesQueue.add(new PieceIndex(nextPieceIdx));
-    // }
-    // return nextPieceIdx;
-    // } finally {
-    // this.readLock.unlock();
-    // }
-    // }
 
     public void setReceivedPieceIndex(int pieceIndex) {
         try {
@@ -94,7 +64,7 @@ public class Bitfield {
         }
     }
 
-    public boolean pieceTransferCompleted() {
+    public boolean receivedAllPieces() {
         int nextClearIndex = bitfield.nextClearBit(0);
         return nextClearIndex == -1 || nextClearIndex >= numberOfPieces;
     }
@@ -104,7 +74,6 @@ public class Bitfield {
     }
 
     public void removeTimedOutPieceIndex(int pieceIndex) {
-        // System.out.println("#################### " + pieceIndex);
         this.requestedPieces.remove(pieceIndex);
     }
 
