@@ -216,7 +216,7 @@ public class EndPoint implements Runnable {
         if (!bitfield.isInterested(peerBitfield)) {
             sendNotInterested();
         }
-        if (bitfield.allPiecesReceived()) {
+        if (bitfield.pieceTransferCompleted()) {
             System.out.println("Received complete file!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             this.filePieces.joinPiecesintoFile();
             sendDone();

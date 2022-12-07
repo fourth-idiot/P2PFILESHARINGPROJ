@@ -35,7 +35,8 @@ public class Peer {
     private final PeerServer peerServer;
     private final PeerClient peerClient;
 
-    public Peer(int id, CommonCfg commoncfg, PeerInfoCfg peerInfoCfg, ExecutorService executorService, ScheduledExecutorService scheduler) {
+    public Peer(int id, CommonCfg commoncfg, PeerInfoCfg peerInfoCfg, ExecutorService executorService,
+            ScheduledExecutorService scheduler) {
         this.id = id;
         this.commonCfg = commoncfg;
         this.peerInfoCfg = peerInfoCfg;
@@ -106,15 +107,14 @@ public class Peer {
         this.completedPeers.add(peerId);
     }
 
-    public synchronized boolean allPeersDone()
-    {
+    public synchronized boolean allPeersDone() {
         System.out.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         System.out.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         System.out.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         System.out.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         System.out.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         Set<Integer> peerIds = peerInfoCfg.getPeers().keySet();
-        if (bitfield.allPiecesReceived()) {
+        if (bitfield.pieceTransferCompleted()) {
             peerIds.remove(id);
         }
         peerIds.removeAll(completedPeers);
@@ -127,7 +127,7 @@ public class Peer {
         // Reset unchoked peer's list and download rates
         this.preferredNeighbors.clear();
         System.out.println(this.preferredNeighbors);
-        for (int peerId : downloadRateMap.keySet()){
+        for (int peerId : downloadRateMap.keySet()) {
             downloadRateMap.put(peerId, 0);
         }
         System.out.println(downloadRateMap);
@@ -150,7 +150,7 @@ public class Peer {
         List<Map.Entry<Integer, Integer>> sortedDownloadRateMap = new ArrayList<>(downloadRateMap.entrySet());
         sortedDownloadRateMap.sort(Map.Entry.comparingByValue());
         List<Integer> sortedPeers = new ArrayList<>();
-        for(Map.Entry<Integer, Integer> entry : sortedDownloadRateMap) {
+        for (Map.Entry<Integer, Integer> entry : sortedDownloadRateMap) {
             sortedPeers.add(entry.getKey());
         }
         return sortedPeers;
@@ -212,7 +212,8 @@ public class Peer {
                 while (true) {
                     Socket socket = serverSocket.accept();
                     System.out.println("Peer " + Peer.this.id + " received a connection request");
-                    Peer.this.executorService.execute(new EndPoint(id, Peer.this, socket, Peer.this.executorService, Peer.this.scheduler, Peer.this.bitfield, Peer.this.filePieces));
+                    Peer.this.executorService.execute(new EndPoint(id, Peer.this, socket, Peer.this.executorService,
+                            Peer.this.scheduler, Peer.this.bitfield, Peer.this.filePieces));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -238,7 +239,8 @@ public class Peer {
                         socket = new Socket(peerInfo.getHostName(), peerInfo.getPort());
                     }
                     System.out.println("Peer " + Peer.this.id + " made a connection request to " + peerInfo.getId());
-                    Peer.this.executorService.execute(new EndPoint(id, Peer.this, peerInfo.getId(), socket, Peer.this.executorService, Peer.this.scheduler, Peer.this.bitfield, Peer.this.filePieces));
+                    Peer.this.executorService.execute(new EndPoint(id, Peer.this, peerInfo.getId(), socket,
+                            Peer.this.executorService, Peer.this.scheduler, Peer.this.bitfield, Peer.this.filePieces));
                 } catch (Exception e) {
                     e.printStackTrace();
                     ;
