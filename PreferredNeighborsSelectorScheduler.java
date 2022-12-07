@@ -1,41 +1,32 @@
-import java.util.Optional;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 
 public class PreferredNeighborsSelectorScheduler implements Runnable {
-
-    private final int id;
     private final ExecutorService executorService;
     private Peer peer;
 
-    public PreferredNeighborsSelectorScheduler(int id, ExecutorService executorService, Peer peer){
-        this.id = id;
+    public PreferredNeighborsSelectorScheduler(ExecutorService executorService, Peer peer){
         this.executorService = executorService;
         this.peer = peer;
     }
 
     @Override
     public void run(){
-
+        System.out.println("Preferred neigh handlers scheduler");
         if (Thread.currentThread().isInterrupted())
             return;
-
-        peer.reselectNeighbours();
-
-        if (!peer.getUnchokedNeighborsList().isEmpty()){
-
-           // sendMessage(peer.getUnchokedNeighborsList(), Constants.MessageType.UNCHOKE);
-           for (int id : peer.getUnchokedNeighborsList()){
-            EndPoint ep = peer.getPeerEndPoint(id);
-            ep.sendMessage(Constants.MessageType.UNCHOKE, executorService);
-           }
-
+        this.peer.reselectNeighbours();
+        for (Map.Entry<Integer, EndPoint> entry : peer.getPeerEndPoints().entrySet()) {
+            Integer peerId = entry.getKey();
+            EndPoint endPoint = entry.getValue();
+            if (peer.getPreferredNeighbors().contains(peerId)) {
+                endPoint.sendMessage(Constants.MessageType.UNCHOKE);
+            } else if (peer.getOptimisticNeighbor().get() == peerId) {
+                continue;
+            } else {
+                endPoint.sendMessage(Constants.MessageType.CHOKE);
+            }
         }
-
-        
     }
-
-
-    
 }

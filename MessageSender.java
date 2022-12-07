@@ -13,17 +13,13 @@ public class MessageSender implements Runnable {
 
     @Override
     public void run() {
-
         try {
             if (Thread.currentThread().isInterrupted())
                 return;
-
-            synchronized(outputStream){
+            synchronized(outputStream) {
                 Thread.sleep(15);
                 outputStream.write(msg);
             }
-        } catch (InterruptedException | SocketException e){
-            return;
         } catch (Exception e){
             e.printStackTrace();
         }

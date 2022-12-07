@@ -8,29 +8,46 @@ import java.util.BitSet;
 
 public class Bitfield {
     private final BitSet bitfield;
+    private final CommonCfg commonCfg;
     private final int numberOfPieces;
     private final Set<Integer> requestedPieces = ConcurrentHashMap.newKeySet();
-    private final DelayQueue<PieceIndex> delayQueue = new DelayQueue<>();
+    private final DelayQueue<PieceIndex> requestedPiecesQueue = new DelayQueue<>();
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock readLock = readWriteLock.readLock();
     private final Lock writeLock = readWriteLock.writeLock();
 
     public Bitfield(BitSet bitfield, CommonCfg commonCfg) {
         this.bitfield = bitfield;
-        this.numberOfPieces = commonCfg.getNumberOfPieces();
+        this.commonCfg = commonCfg;
+        this.numberOfPieces = this.commonCfg.getNumberOfPieces();
     }
 
     public BitSet getBitfield() {
-        return bitfield;
+        return this.bitfield;
     }
 
     public boolean isInterested(BitSet peerBitField) {
         try {
-            readLock();
-            return getNextClearIndex(peerBitField) != -1;
+            this.readLock.lock();
+            return getNextInterestedPieceIndex(peerBitField) != -1;
         } finally {
-            readUnlock();
+            this.readLock.unlock();
         }
+    }
+
+    public int getNextInterestedPieceIndex(BitSet peerBitField) {
+        System.out.println(requestedPieces);
+        for(int i = peerBitField.nextSetBit(0); i != -1; i = peerBitField.nextSetBit(i + 1)) {
+            // If the piece is present / already requested
+            if (requestedPieces.contains(i)) {
+                continue;
+            }
+            // If the peer has an interesting piece
+            if (!bitfield.get(i)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public int getFirstClearIndexFromBitfields(BitSet bf1, BitSet bf2, int fromIdx) {
@@ -47,36 +64,32 @@ public class Bitfield {
         return index;
     }
 
-    private int getNextClearIndex(BitSet peerBitField) {
-        int index = -1;
-        do {
-            index = getFirstClearIndexFromBitfields(bitfield, peerBitField, index + 1);
-        } while (requestedPieces.contains(index));
-        return index;
-
+    public void addToRequestedPieces(int pieceIndex) {
+        this.requestedPieces.add(pieceIndex);
+        this.requestedPiecesQueue.add(new PieceIndex(pieceIndex));
     }
 
-    public int getNextInterestedPieceIndex(BitSet peerBitField) {
-        try {
-            readLock();
-            int nextPieceIdx = getNextClearIndex(peerBitField);
-            if (nextPieceIdx != -1) {
-                requestedPieces.add(nextPieceIdx);
-                delayQueue.add(new PieceIndex(nextPieceIdx));
-            }
-            return nextPieceIdx;
-        } finally {
-            readUnlock();
-        }
-    }
+    // public int getNextInterestedPieceIndex(BitSet peerBitField) {
+    //     try {
+    //         this.readLock.lock();
+    //         int nextPieceIdx = getNextClearIndex(peerBitField);
+    //         if (nextPieceIdx != -1) {
+    //             requestedPieces.add(nextPieceIdx);
+    //             this.requestedPiecesQueue.add(new PieceIndex(nextPieceIdx));
+    //         }
+    //         return nextPieceIdx;
+    //     } finally {
+    //         this.readLock.unlock();
+    //     }
+    // }
 
-    public void removeReceivedPieceIndex(int pieceIndex) {
+    public void setReceivedPieceIndex(int pieceIndex) {
         try {
-            writeLock();
+            this.writeLock.lock();
             bitfield.set(pieceIndex);
             requestedPieces.remove(pieceIndex);
         } finally {
-            writeUnlock();
+            this.writeLock.unlock();
         }
     }
 
@@ -85,27 +98,20 @@ public class Bitfield {
         return nextClearIndex == -1 || nextClearIndex >= numberOfPieces;
     }
 
-    private void readUnlock() {
-        readLock.unlock();
-    }
-
-    public void readLock() {
-        readLock.lock();
-    }
-
-    public void writeLock() {
-        writeLock.lock();
-    }
-
-    public void writeUnlock() {
-        writeLock.unlock();
-    }
-
     public DelayQueue<PieceIndex> getDelayQueue() {
-        return delayQueue;
+        return this.requestedPiecesQueue;
     }
 
     public void removeTimedOutPieceIndex(int pieceIndex) {
-        requestedPieces.remove(pieceIndex);
+        System.out.println("#################### " + pieceIndex);
+        this.requestedPieces.remove(pieceIndex);
+    }
+
+    public void readLock() {
+        this.readLock.lock();
+    }
+
+    public void readUnlock() {
+        this.readLock.unlock();
     }
 }

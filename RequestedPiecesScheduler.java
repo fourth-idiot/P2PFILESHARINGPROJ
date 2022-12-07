@@ -16,35 +16,30 @@ public class RequestedPiecesScheduler implements Runnable{
         this.id = id;
         this.executorService = executorService;
         this.peer = peer;
-        this.bitfield = peer.getBitfieldNew(id);
-        
+        this.bitfield = peer.getBitfield();
     }
 
     @Override
     public void run() {
-
+        System.out.println("Inside this..................");
         try{
             if (Thread.currentThread().isInterrupted())
                 return;
 
             DelayQueue<PieceIndex> piecesRequested = bitfield.getDelayQueue();
-            
             PieceIndex expiredPieceIndex = piecesRequested.poll();
-
             while(Objects.nonNull(expiredPieceIndex)){
-                bitfield.removeTimedOutPieceIndex(id);
-
-                for (Map.Entry<Integer, Bitfield> entry : peer.getBitfieldMap().entrySet()){
-                    BitSet bitset = entry.getValue().getBitfield();
+                bitfield.removeTimedOutPieceIndex(expiredPieceIndex.getIndex());
+                System.out.println(expiredPieceIndex.getIndex());
+                for (Map.Entry<Integer, BitSet> entry : peer.getPeerBitfields().entrySet()){
+                    BitSet bitset = entry.getValue();
                     if (bitset.get(expiredPieceIndex.getIndex())){
                         EndPoint ep = peer.getPeerEndPoint(entry.getKey());
-                        ep.sendMessage(Constants.MessageType.INTERESTED, executorService);
+                        ep.sendMessage(Constants.MessageType.INTERESTED);
                     }
                 }
-                
+                expiredPieceIndex = piecesRequested.poll();
             }
-            
-            
         } catch (Exception e){
             e.printStackTrace();
         }

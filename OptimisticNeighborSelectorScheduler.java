@@ -4,38 +4,40 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 
 public class OptimisticNeighborSelectorScheduler implements Runnable{
-
-    private final int id;
-    private final ExecutorService executorService;
     private Peer peer;
     private Random random;
 
-    public OptimisticNeighborSelectorScheduler(int id, ExecutorService executorService, Peer peer){
-        this.id = id;
-        this.executorService = executorService;
+    public OptimisticNeighborSelectorScheduler(Peer peer){
         this.peer = peer;
         random = new Random();
-        
     }
 
     @Override
     public void run(){
-
-        if (Thread.currentThread().isInterrupted())
+        System.out.println("INSIDE******************");
+        if (Thread.currentThread().isInterrupted()) {
+            System.out.println("REACHED HERE((((((((((((");
             return;
-
+        }
+        System.out.println("THISSSSSSSSSSSSS");
         List<Integer> chokedPeers = new ArrayList<>();
         for (int id : peer.getPeerInfoCfg().getPeers().keySet()){
-            if (!peer.getUnchokedNeighborsList().contains(id))
+            if ((!peer.getPreferredNeighbors().contains(id)) && (peer.getInterestedPeers().contains(id)))
                 chokedPeers.add(id);
         }
-
-        int optimisticNeighbor = chokedPeers.get(random.nextInt(chokedPeers.size()));
-        peer.getUnchokedNeighborsList().add(optimisticNeighbor);
-        peer.setOptimisticNeighbor(optimisticNeighbor);
-        EndPoint ep = peer.getPeerEndPoint(optimisticNeighbor);
-        ep.sendMessage(Constants.MessageType.UNCHOKE, executorService);
-
+        try {
+            System.out.println("CHoked peers: " + chokedPeers);
+            if(chokedPeers.size() > 0) {
+                int optimisticNeighbor = chokedPeers.get(random.nextInt(chokedPeers.size()));
+                System.out.println("OPtimistic neighbor: " + optimisticNeighbor);
+                System.out.println("Peer " + optimisticNeighbor + " selected as opt unchoked neigh@@@@@@@@@@@@@@@@@");
+                peer.setOptimisticNeighbor(optimisticNeighbor);
+                EndPoint ep = peer.getPeerEndPoint(optimisticNeighbor);
+                ep.sendMessage(Constants.MessageType.UNCHOKE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
 }

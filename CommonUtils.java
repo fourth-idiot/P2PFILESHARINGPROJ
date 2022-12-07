@@ -1,4 +1,11 @@
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 
 public class CommonUtils {
     public static byte[] getMessage(Constants.MessageType messageType, byte[] messagePayload) {
@@ -55,5 +62,27 @@ public class CommonUtils {
 
         }
         return start;
+    }
+
+    public static String getCurrentTime() {
+        return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").format(LocalDateTime.now());
+    }
+
+    public static int mergeByteArrays(byte[] arr1, byte[] arr2, int start)
+    {
+        for (byte byteData : arr2)
+        {
+            arr1[start++] = byteData;
+        }
+
+        return start;
+    }
+
+    public static void deleteDirectory(String path) throws IOException
+    {
+        Files
+        .walk(Paths.get(path))
+        .map(Path::toFile)
+        .forEach(File::delete);
     }
 }
