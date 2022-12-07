@@ -62,14 +62,14 @@ public class EndPoint implements Runnable {
     }
 
     private void sendHandshake() throws Exception {
-        this.outputStream.write(CommonUtils.getHandshakeMessage(this.peer1Id));
+        this.outputStream.write(Helper.getHandshakeMessage(this.peer1Id));
     }
 
     private void receiveHandshake() throws Exception {
         byte[] response = inputStream.readNBytes(32);
         String responseHeader = new String(Arrays.copyOfRange(response, 0, 18), StandardCharsets.UTF_8);
         System.out.println(responseHeader + ", " + Constants.HANDSHAKE_HEADER);
-        int peer2Id = CommonUtils.byteArrToInt(Arrays.copyOfRange(response, 28, 32));
+        int peer2Id = Helper.byteArrToInt(Arrays.copyOfRange(response, 28, 32));
         // Check if the handshake response message has correct header
         if (!responseHeader.equals(Constants.HANDSHAKE_HEADER)) {
             // Invalid hanshake response message header
@@ -79,19 +79,19 @@ public class EndPoint implements Runnable {
             if (peer2Id != this.peer2Id) {
                 throw new IllegalArgumentException(String.format("Peer {%d} received invalid peer id (%d) in handshake message", peer1Id, peer2Id));
             }
-            LOGGER.info("{}: Peer {} makes a connection to Peer {}", CommonUtils.getCurrentTime(), this.peer1Id, this.peer2Id);
+            LOGGER.info("{}: Peer {} makes a connection to Peer {}", Helper.getCurrentTime(), this.peer1Id, this.peer2Id);
         } else {
             // Update peer2Id as received
             this.peer2Id = peer2Id;
             sendHandshake();
-            LOGGER.info("{}: Peer {} is connected from Peer {}", CommonUtils.getCurrentTime(), this.peer1Id, this.peer2Id);
+            LOGGER.info("{}: Peer {} is connected from Peer {}", Helper.getCurrentTime(), this.peer1Id, this.peer2Id);
         }
     }
 
     public void sendMessage(Constants.MessageType messageType) {
         try {
             this.executorService.execute(
-                new MessageSender(this.socket.getOutputStream(), CommonUtils.getMessage(messageType, new byte[0]))
+                new MessageSender(this.socket.getOutputStream(), Helper.getMessage(messageType, new byte[0]))
             );
         } catch (IOException e) {
             e.printStackTrace();
@@ -104,7 +104,7 @@ public class EndPoint implements Runnable {
             this.bitfield.readLock();
             byte[] bitfield = this.bitfield.getBitfield().toByteArray();
             System.out.println("Sending bitfield message to " + this.peer2Id);
-            outputStream.write(CommonUtils.getMessage(Constants.MessageType.BITFIELD, bitfield));
+            outputStream.write(Helper.getMessage(Constants.MessageType.BITFIELD, bitfield));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -131,11 +131,11 @@ public class EndPoint implements Runnable {
     }
 
     private void sendInterested() {
-        executorService.execute(new MessageSender(outputStream, CommonUtils.getMessage(Constants.MessageType.INTERESTED, null)));
+        executorService.execute(new MessageSender(outputStream, Helper.getMessage(Constants.MessageType.INTERESTED, null)));
     }
 
     private void receiveInterested() {
-        LOGGER.info("{}: Peer {} received the 'interested' message from {}", CommonUtils.getCurrentTime(), this.peer1Id, this.peer2Id);
+        LOGGER.info("{}: Peer {} received the 'interested' message from {}", Helper.getCurrentTime(), this.peer1Id, this.peer2Id);
         this.peer1.addInterestedPeer(peer2Id);
     }
 
@@ -149,7 +149,7 @@ public class EndPoint implements Runnable {
 
     private void receiveUnchoke() {
         System.out.println("Received unchoke message");
-        LOGGER.info("{}: Peer {} is unchoked by {}", CommonUtils.getCurrentTime(), this.peer1Id, this.peer2Id);
+        LOGGER.info("{}: Peer {} is unchoked by {}", Helper.getCurrentTime(), this.peer1Id, this.peer2Id);
         this.choke = false;
         sendRequest();
     }
@@ -161,7 +161,7 @@ public class EndPoint implements Runnable {
                 System.out.println("Requesting piece " + nextPieceIndex);
                 bitfield.addToRequestedPieces(nextPieceIndex);
                 executorService.execute(
-                    new MessageSender(outputStream, CommonUtils.getMessage(Constants.MessageType.REQUEST, CommonUtils.intToByteArr(nextPieceIndex)))
+                    new MessageSender(outputStream, Helper.getMessage(Constants.MessageType.REQUEST, Helper.intToByteArr(nextPieceIndex)))
                 );
             } else {
                 sendNotInterested();
@@ -170,29 +170,29 @@ public class EndPoint implements Runnable {
     }
 
     private void receiveRequest(int messageLength) throws IOException {
-        int pieceIndex = CommonUtils.byteArrToInt(inputStream.readNBytes(messageLength));
+        int pieceIndex = Helper.byteArrToInt(inputStream.readNBytes(messageLength));
         System.out.println("Received piece request for piece index: " + pieceIndex);
         if (this.peer1.isUnchoked(this.peer2Id)) {
             byte[] pieceByteArray = this.filePieces.getFilePiece(pieceIndex);
             byte[] pieceResponse = new byte[4 + pieceByteArray.length];
-            int counter = CommonUtils.mergeByteArrays(pieceResponse, CommonUtils.intToByteArr(pieceIndex), 0);
-            CommonUtils.mergeByteArrays(pieceResponse, pieceByteArray, counter);
+            int counter = Helper.mergeByteArrays(pieceResponse, Helper.intToByteArr(pieceIndex), 0);
+            Helper.mergeByteArrays(pieceResponse, pieceByteArray, counter);
             System.out.println("Sending piece");
-            executorService.execute(new MessageSender(outputStream, CommonUtils.getMessage(Constants.MessageType.PIECE, pieceResponse)));
+            executorService.execute(new MessageSender(outputStream, Helper.getMessage(Constants.MessageType.PIECE, pieceResponse)));
         }
     }
 
     private void sendNotInterested() {
             executorService.execute(new MessageSender(outputStream,
-                CommonUtils.getMessage(Constants.MessageType.NOT_INTERESTED, null)));
+                Helper.getMessage(Constants.MessageType.NOT_INTERESTED, null)));
     }
 
     private void receiveHave(int payloadLength) throws IOException {
-        int pieceIndex = CommonUtils.byteArrToInt(inputStream.readNBytes(payloadLength));
+        int pieceIndex = Helper.byteArrToInt(inputStream.readNBytes(payloadLength));
         peerBitfield.set(pieceIndex);
         if(bitfield.isInterested(peerBitfield)) {
             executorService.execute(
-                new MessageSender(outputStream, CommonUtils.getMessage(Constants.MessageType.INTERESTED, null))
+                new MessageSender(outputStream, Helper.getMessage(Constants.MessageType.INTERESTED, null))
             );
         }
     }
@@ -206,7 +206,7 @@ public class EndPoint implements Runnable {
 
     private void receivePiece(int msglen) throws IOException {
         System.out.println("Message length: " + msglen);
-        int pieceIndex = CommonUtils.byteArrToInt(inputStream.readNBytes(4));
+        int pieceIndex = Helper.byteArrToInt(inputStream.readNBytes(4));
         byte[] pieceByteArray = inputStream.readNBytes(msglen - 4);
         System.out.println("Saving file piece");
         this.filePieces.saveFilePiece(pieceIndex, pieceByteArray);
@@ -229,13 +229,13 @@ public class EndPoint implements Runnable {
         System.out.println("Broadcasting have message with piece index: " + pieceIndex);
         for (EndPoint endPoint : this.peer1.getPeerEndPoints().values()) {
             System.out.println(endPoint);
-            executorService.execute(new MessageSender(endPoint.outputStream, CommonUtils.getMessage(Constants.MessageType.HAVE, CommonUtils.intToByteArr(pieceIndex))));
+            executorService.execute(new MessageSender(endPoint.outputStream, Helper.getMessage(Constants.MessageType.HAVE, Helper.intToByteArr(pieceIndex))));
         }
     }
 
     private void sendDone() throws IOException {
         for (EndPoint endPoint : this.peer1.getPeerEndPoints().values()) {
-            executorService.execute(new MessageSender(endPoint.outputStream, CommonUtils.getMessage(Constants.MessageType.COMPLETED, null)));
+            executorService.execute(new MessageSender(endPoint.outputStream, Helper.getMessage(Constants.MessageType.COMPLETED, null)));
             // need for done Message CommonUtil.getMessage(0, MessageType.DONE, null)
         }
     }
@@ -278,7 +278,7 @@ public class EndPoint implements Runnable {
             while (true) {
                 byte[] message = inputStream.readNBytes(5);
                 if (message.length > 0) {
-                    int payloadLength = CommonUtils.byteArrToInt(Arrays.copyOfRange(message, 0, 4));
+                    int payloadLength = Helper.byteArrToInt(Arrays.copyOfRange(message, 0, 4));
                     Constants.MessageType messageType = Constants.MessageType.getByValue((int) message[4]);
                     if (messageType != null) {
                         switch (messageType) {
