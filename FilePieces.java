@@ -39,9 +39,7 @@ public class FilePieces {
 		try {
             FileInputStream fileInputStream = new FileInputStream(this.filePath);
             int pieceStart = 0;
-            System.out.println("###################");
             System.out.println(this.pieceSize);
-            System.out.println("#################");
             for (int pieceIndex = 0; pieceIndex < this.numberOfPieces; pieceIndex++) {
                 int newPieceStart = pieceStart + this.pieceSize;
                 int pieceLength = this.pieceSize;
@@ -83,7 +81,6 @@ public class FilePieces {
     }
 
     public void joinPiecesintoFile() throws IOException {
-        System.out.println("Joining pieces into file");
 		FileOutputStream fileOutputStream = new FileOutputStream(this.filePath);
 		File[] splitFiles = new File[numberOfPieces];
 		for(int pieceIndex = 0; pieceIndex < numberOfPieces; pieceIndex++) {
@@ -103,7 +100,7 @@ public class FilePieces {
 
     public synchronized void deletePiecesDir() throws IOException {
         if (Files.exists(Paths.get(piecesDirPath))) {
-            CommonUtils.deleteDirectory(piecesDirPath);
+            Helper.deleteDirectory(piecesDirPath);
             Files.delete(Paths.get(piecesDirPath));
         }
     }

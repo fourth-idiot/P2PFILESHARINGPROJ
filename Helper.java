@@ -5,9 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.time.LocalDateTime;
 
-public class CommonUtils {
+
+public class Helper {
     public static byte[] getMessage(Constants.MessageType messageType, byte[] messagePayload) {
         int payloadLength = messagePayload != null ? messagePayload.length : 0;
         byte[] messageLength = intToByteArr(payloadLength);
@@ -82,6 +84,7 @@ public class CommonUtils {
     {
         Files
         .walk(Paths.get(path))
+        .sorted(Comparator.reverseOrder())
         .map(Path::toFile)
         .forEach(File::delete);
     }
