@@ -39,6 +39,7 @@
     - Worked on the project structure and implemented the switch case functions like interested, not interested, have, request, piece and their related helper functions.
 
 - Prasad Ramakanth Hadkar
+    - Collaborated in projected design and then implemented schedulers which choose k preferred neighbors as per the download rate in every interval(p seconds)and choose optimistically unchoked neighbors and send choke and unchoke messages accordingly. Also wrote scheduler to ask for a certain piece after a timeout if piece request was not fulfiled.
 
 
 
