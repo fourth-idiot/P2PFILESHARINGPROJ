@@ -27,7 +27,7 @@
 - Optimistic neighbors selection after every m seconds
 - Successful exchange of REQUEST and HAVE messages
 - Successfull exchange of PIECE 
-- Combine all pieces to create the complete file.
+- Combine all pieces to create the complete file
 - Termination after all peers receive the complete file
 
 
