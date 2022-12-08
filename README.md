@@ -30,17 +30,33 @@
 - Termination after all peers receive the complete file
 
 
-## How to Run
+## Steps to run
+### project setup 
+1. Unzip the Project
+2. ssh to cise machines and login with your username
+3. copy the project folder to the cise machine
+
+### run
+1. Go to project specific sub-directory
+
+2. (For manually starting each peer) run the shell file by the command: \
+    `./run.sh <working_dir> <peer_id>`
+3. For automated deployment \
+`javac StartRemotePeers.java` \
+`java -Dusername=<username> -DworkingDir=<directory> StartRemotePeers`
+    
+
 
 ## Project Contributions
 - Nikhil Mukesh Saoji
-
+    - Collaborated in project design and wrote code to establish TCP connections, send and receive handshake, bitfield messages,Piece handling, file joining and splitting and termination logic.
 - Gauri Pandharinath Bodke
     - Worked on the project structure and implemented the switch case functions like interested, not interested, have, request, piece and their related helper functions.
 
 - Prasad Ramakanth Hadkar
-    - Collaborated in projected design and then implemented schedulers which choose k preferred neighbors as per the download rate in every interval(p seconds)and choose optimistically unchoked neighbors and send choke and unchoke messages accordingly. Also wrote scheduler to ask for a certain piece after a timeout if piece request was not fulfiled.
-
+    - Collaborated in projected design and then implemented schedulers which choose k preferred neighbors as per the download rate in every interval(p seconds), choose optimistically unchoked neighbors, send choke and unchoke messages and handling piece request after timeout.
 
 
 ## Demo link
+- [Project Demo Youtube Link](https://youtu.be/FQGaC-ntH-k)
+- [Project Demo Ondrive Link](https://uflorida-my.sharepoint.com/:v:/g/personal/n_saoji_ufl_edu/Efy9dX27DcRAno2An0UGnukBxitgfFbbGAeJgct302XJkQ?e=APCpSR)
